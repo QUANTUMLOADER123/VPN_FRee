@@ -1,4 +1,5 @@
 /build/
 /out/
 /.vs/
-/CMakeUserPresets.json
+*.vcxproj.user
+*.suo

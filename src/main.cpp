@@ -8,6 +8,7 @@ constexpr int kIconResource = 101;
 constexpr UINT kTrayMessage = WM_APP + 1;
 constexpr UINT kTrayId = 1;
 constexpr UINT kExitCommand = 1001;
+constexpr int kExitHotkey = 1;
 constexpr wchar_t kClassName[] = L"ChromeBackgroundDemo";
 
 HINSTANCE instance;
@@ -79,6 +80,12 @@ LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lp
             return 0;
         }
         break;
+    case WM_HOTKEY:
+        if (wparam == kExitHotkey) {
+            DestroyWindow(window);
+            return 0;
+        }
+        break;
     case WM_CLOSE:
         if (add_tray_icon(window)) {
             in_background = true;
@@ -91,6 +98,7 @@ LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lp
         if (lparam == WM_RBUTTONUP || lparam == WM_CONTEXTMENU) show_tray_menu(window);
         return 0;
     case WM_DESTROY:
+        UnregisterHotKey(window, kExitHotkey);
         if (in_background) remove_tray_icon(window);
         PostQuitMessage(0);
         return 0;
@@ -125,8 +133,13 @@ int WINAPI wWinMain(HINSTANCE hinstance, HINSTANCE, PWSTR, int show_command) {
                                   WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
                                   x, y, width, height, nullptr, nullptr, instance, nullptr);
     if (!window) return 1;
+    const bool hotkey_registered = RegisterHotKey(window, kExitHotkey, MOD_ALT | MOD_NOREPEAT, 'X') != FALSE;
     ShowWindow(window, show_command);
     UpdateWindow(window);
+    if (!hotkey_registered) {
+        MessageBoxW(window, L"Alt+X \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e: \u0441\u043e\u0447\u0435\u0442\u0430\u043d\u0438\u0435 \u0443\u0436\u0435 \u0437\u0430\u043d\u044f\u0442\u043e \u0438\u043b\u0438 \u043d\u0435 \u043c\u043e\u0433\u043b\u043e \u0431\u044b\u0442\u044c \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043e. \u0414\u043b\u044f \u0432\u044b\u0445\u043e\u0434\u0430 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 OK \u0438\u043b\u0438 \u043c\u0435\u043d\u044e \u0437\u043d\u0430\u0447\u043a\u0430 \u0432 \u0442\u0440\u0435\u0435.",
+                    L"Chrome", MB_OK | MB_ICONWARNING);
+    }
 
     MSG message{};
     BOOL result;
